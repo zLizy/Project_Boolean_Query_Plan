@@ -1,0 +1,4 @@
+car,model2
+red,model6
+truck,model3
+yellow,model6
