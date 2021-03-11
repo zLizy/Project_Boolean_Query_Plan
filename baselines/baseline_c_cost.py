@@ -23,6 +23,7 @@ def getBaseline1(query,M,T,Cost,Accuracy,bound,selected_model={},flag=True):
 	bestplan = []
 	for t_ind,task in enumerate(T):
 		# m_ind,t_ind = np.unravel_index(np.argmax(Accuracy[:,i]), a.shape)
+		
 		sorted_arg_model = list(np.argsort(np.divide(Accuracy[:,t_ind],Cost[:,t_ind])))[::-1] # descending order, the first index is the max
 
 		for m_ind in sorted_arg_model:

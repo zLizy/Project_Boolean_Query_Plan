@@ -7,7 +7,7 @@ from sympy.parsing.sympy_parser import parse_expr
 import argparse
 import matplotlib.pyplot as plt
 from baselines.baseline_c_cost import getBaseline1
-from baselines.baseline_c_accuracy_test import getBaseline2
+from baselines.baseline_c_accuracy_reverse import getBaseline2
 
 
 
@@ -56,53 +56,70 @@ def run(args):
 
 	for query in queryList:
 
-		if idx % 1 == 0:
+		if idx %1 != 0:
 			print('query '+ str(idx))
-		idx+=1
-
-		T,steps = getSteps(str(query))
-
-		# data process
-		start = timeit.default_timer()
-		df_selected = df[T]
-		df_selected = df_selected.dropna(how='all').fillna(0)
-		row_selected = df_selected.index
-		M = df_selected.index.tolist()
-		cost = df.loc[row_selected,'cost']
-		Accuracy = df_selected.to_numpy()
-		end = timeit.default_timer()
-		data_process_time = end-start
-
-
-		# compute runtime
-		# ## optimizer
-		if args.approach == 'optimizer':
-			start = timeit.default_timer()
-			optimizer = Optimizer(steps,M,T,Accuracy,cost,args.constraint,args.bound)
-			# task:model
-			assignment,_A,_C = optimizer.optimize()
-			end = timeit.default_timer()
-			time = end-start
-			writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time)
 		else:
-			Cost = np.array([[cost[i] if Accuracy[i,j] !=0 else 500 for j in range(len(T))] for i in range(len(M))])
-			if args.constraint == 'cost':
-				## baseline1
+			print('###################')
+			print('query '+ str(idx))
+			T,steps = getSteps(str(query))
+
+			# data process
+			start = timeit.default_timer()
+			df_selected = df[T]
+			df_selected = df_selected.dropna(how='all').fillna(0)
+			row_selected = df_selected.index
+			M = df_selected.index.tolist()
+			cost = df.loc[row_selected,'cost']
+			Accuracy = df_selected.to_numpy()
+			end = timeit.default_timer()
+			data_process_time = end-start
+
+
+			# compute runtime
+			# ## optimizer
+			if args.approach == 'optimizer':
 				start = timeit.default_timer()
+				optimizer = Optimizer(steps,M,T,Accuracy,cost,args.constraint,args.bound)
 				# task:model
-				flag,_A,_C,assignment = getBaseline1(steps,M,T,Cost,Accuracy,args.bound,selected_model={})
+				assignment,_A,_C = optimizer.optimize()
 				end = timeit.default_timer()
 				time = end-start
-				writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time,approach='baseline')
+				writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time)
 			else:
-				## baseline2
-				start = timeit.default_timer()
-				flag,_A,_C,assignment = getBaseline2(steps,M,T,Cost,Accuracy,args.bound,selected_model={})
-				end = timeit.default_timer()
-				time = end-start
-				print(flag,_A,_C)
-				writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time,approach='baseline')
-			
+				Cost = np.array([[cost[i] if Accuracy[i,j] !=0 else 500 for j in range(len(T))] for i in range(len(M))])
+				if args.constraint == 'cost':
+					## baseline1
+					start = timeit.default_timer()
+					# task:model
+					flag,_A,_C,assignment = getBaseline1(steps,M,T,Cost,Accuracy,args.bound,selected_model={})
+					end = timeit.default_timer()
+					time = end-start
+					writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time,approach='baseline')
+				else:
+					## baseline2
+					start = timeit.default_timer()
+					from baselines.baseline_c_accuracy_reverse import getBaseline2
+					flag,_A,_C,assignment = getBaseline2(steps,M,T,Cost,Accuracy,args.bound,start,selected_model={})
+					if _A ==0 and not flag:
+						print('next')
+						start_ = timeit.default_timer()
+						from baselines.baseline_c_accuracy_test import getBaseline2
+						flag,_A,_C,assignment = getBaseline2(steps,M,T,Cost,Accuracy,args.bound,start_,selected_model={})
+						if _A ==0 and not flag:
+							print('next')
+							start_ = timeit.default_timer()
+							from baselines.baseline_c_accuracy import getBaseline2
+							flag,_A,_C,assignment = getBaseline2(steps,M,T,Cost,Accuracy,args.bound,start_,selected_model={})
+							if _A ==0 and not flag:
+								print('next')
+								from baselines.baseline_c_accuracy_reverse import getBaseline2
+								flag,_A,_C,assignment = getBaseline2(steps,M,T,Cost,Accuracy,args.bound,start,selected_model={},second=True)
+					
+					end = timeit.default_timer()
+					time = end-start
+					print(flag,_A,_C)
+					writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time,approach='baseline')
+		idx+=1	
 		# assignmentList.append(assignment)
 
 	
@@ -113,11 +130,13 @@ def run(args):
 
 if __name__ == '__main__':
 	
-	# python run.py -mdist uniform -qdist uniform -constraint cost -bound 200 -approach baseline
-	# python run.py -mdist uniform -qdist power_law -constraint cost -bound 200 -approach baseline
-	# python run.py -mdist power_law -qdist uniform -constraint cost -bound 200
-	# python run.py -mdist power_law -qdist power_law -constraint cost -bound 200
-	# python run.py -mdist uniform -qdist uniform -constraint accuracy -bound 0.95
+	# python3 run.py -mdist uniform -qdist uniform -constraint cost -bound 200 -approach baseline
+	# python3 run.py -mdist uniform -qdist power_law -constraint cost -bound 200 -approach baseline
+	# python3 run.py -mdist power_law -qdist uniform -constraint cost -bound 200
+	# python3 run.py -mdist power_law -qdist power_law -constraint cost -bound 200
+	# python3 run.py -mdist uniform -qdist uniform -constraint accuracy -bound 0.95
+	# python3 run.py -mdist uniform -qdist power_law -constraint accuracy -bound 0.95
+	# python3 run.py -mdist power_law -qdist uniform -constraint accuracy -bound 0.95
 	# python run.py -mdist uniform -qdist power_law -constraint accuracy -bound 0.95
 	
 	# python run.py -m 200 -n 20 -nquery 200 -constraint cost -bound 200

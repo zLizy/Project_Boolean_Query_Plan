@@ -160,8 +160,8 @@ def getSteps(query):
 
 def writeResults(args,query,T,all_model,pareto,non_pareto,count_p,count_np,_A,_C,time,data_process_time,approach):
 	
-	# filepath = 'repository/run_summary_'+args.constraint+'_'+args.mdist+'_'+args.qdist+'_'+approach+'.csv'
-	filepath = 'repository/test_.csv'
+	filepath = 'repository/run_summary_'+args.constraint+'_'+args.mdist+'_'+args.qdist+'_'+approach+'.csv'
+	# filepath = 'repository/test_.csv'
 	if os.path.isfile(filepath):
 		df_summary = pd.read_csv(filepath,index_col=0)
 	else: 

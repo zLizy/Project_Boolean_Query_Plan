@@ -4,6 +4,7 @@ Definition of baseline 2:
 
 '''
 import numpy as np
+import timeit
 
 def getSteps(step):
 		# print(step)
@@ -25,84 +26,91 @@ def getSteps(step):
 					#   [0,0,0.96,0.97]])
 
 
-def getBaseline2(query,M,T,Cost,Accuracy,bound,selected_model={},min_accu=0,flag=True,level=0):
+def getBaseline2(query,M,T,Cost,Accuracy,bound,start,selected_model={},min_accu=0,flag=True,level=0):
 
-	for t_ind,task in enumerate(T):
+	if timeit.default_timer() - start > 1:
+		return False,0,0,{}
+
+	# for t_ind,task in enumerate(T):
 		# if level <=1:
 		# 	print(T)
 		# 	print(level,task)
 
-		sorted_arg_model = list(np.argsort(Cost[:,t_ind]))# descending order, the first index is the largest
-		sorted_arg_model = sorted_arg_model[:len(np.nonzero(Accuracy[:,t_ind])[0])]
+	t_ind = 0
+	task = T[0]
 
-		for x,m_ind in enumerate(sorted_arg_model):
+	sorted_arg_model = list(np.argsort(Cost[:,t_ind]))# descending order, the first index is the largest
+	sorted_arg_model = sorted_arg_model[:len(np.nonzero(Accuracy[:,t_ind])[0])]
 
-			if Cost[m_ind,t_ind] == 500:
-				return False,0,0,{}
+	for x,m_ind in enumerate(sorted_arg_model):
+		# if level == 0 :
+		# 	print('level',level,x,M[m_ind])
+		if Cost[m_ind,t_ind] == 500:
+			return False,0,0,{}
 
-			if Accuracy[m_ind,t_ind] < min_accu:
-				continue
-			# print(Accuracy.shape)
+		if Accuracy[m_ind,t_ind] < min_accu:
+			continue
+		# print(Accuracy.shape)
 
-			# if a task can solve multiple tasks, then remove the tasks)
-			answered_tasks_ind = []
-			answered_tasks = []
-			for i,a in enumerate(Accuracy[m_ind,:]):
-				if a != 0:
-					answered_tasks_ind.append(i)
-					answered_tasks.append(T[i])
-			# print('answered_tasks',answered_tasks_ind,T,answered_tasks, Accuracy[m_ind,:])
+		# if a task can solve multiple tasks, then remove the tasks)
+		answered_tasks_ind = []
+		answered_tasks = []
+		for i,a in enumerate(Accuracy[m_ind,:]):
+			if a != 0:
+				answered_tasks_ind.append(i)
+				answered_tasks.append(T[i])
+		# print('answered_tasks',answered_tasks_ind,T,answered_tasks, Accuracy[m_ind,:])
 
-			_T = [t for i,t in enumerate(T) if t != task]
+		_T = [t for i,t in enumerate(T) if t != task]
 
-			# co-solved tasks or accuracy==0
-			for ind,t in enumerate(answered_tasks_ind):
-				ta = answered_tasks[ind]
-				if ta not in selected_model.keys():
-					selected_model[ta] = [M[m_ind],Accuracy[m_ind,t],Cost[m_ind,t]]
-				# check if the new model can beat the previous one
-				elif selected_model[ta][1] < Accuracy[m_ind,t]:
-					selected_model[answered_tasks[ind]] = [M[m_ind],Accuracy[m_ind,t],Cost[m_ind,t]]
-			
-			if selected_model[task][0] == M[m_ind]:
-				continue
+		# co-solved tasks or accuracy==0
+		for ind,t in enumerate(answered_tasks_ind):
+			ta = answered_tasks[ind]
+			if ta not in selected_model.keys():
+				selected_model[ta] = [M[m_ind],Accuracy[m_ind,t],Cost[m_ind,t]]
+			# check if the new model can beat the previous one
+			elif selected_model[ta][1] < Accuracy[m_ind,t]:
+				selected_model[answered_tasks[ind]] = [M[m_ind],Accuracy[m_ind,t],Cost[m_ind,t]]
+		
+		if selected_model[task][0] == M[m_ind]:
+			continue
 
-			if _T == []:
-				steps = query.split('\n')[:-1]
-				for step in steps:
-					name, operator, objects = getSteps(step)
-					if operator == '&':
-						accu = selected_model[objects[0]][1]*selected_model[objects[1]][1]
-					else:
-						accu = selected_model[objects[0]][1] + selected_model[objects[1]][1] - selected_model[objects[0]][1]*selected_model[objects[1]][1]
-					selected_model[name] = [name,accu,0]
-				if accu<bound:
-					min_accu = selected_model[task][1]
-					continue
+		if _T == []:
+			steps = query.split('\n')[:-1]
+			for step in steps:
+				name, operator, objects = getSteps(step)
+				if operator == '&':
+					accu = selected_model[objects[0]][1]*selected_model[objects[1]][1]
 				else:
-					print(accu, Cost[m_ind,t_ind],{task:selected_model[task][0]})
-					return True, accu, selected_model[answered_tasks[ind]][2], {task:selected_model[task][0]}
-			
-			# new_t_ind = [i for i in range(len(T)) if i not in t_ind]
-			_M = [m for i,m in enumerate(M) if i != m_ind]
-			_Accuracy = np.delete(Accuracy, m_ind, 0)
-			_Cost = np.delete(Cost, m_ind, 0)
-			_Accuracy = np.delete(_Accuracy, t_ind, 1)
-			_Cost = np.delete(_Cost, t_ind, 1)
-			# _Accuracy = _Accuracy[:,new_t_ind]
-			# _Cost = _Cost[:,new_t_ind]
-
-			flag, _A, _C, _model = getBaseline2(query,_M,_T,_Cost,_Accuracy,bound,selected_model,level=level+1)
-
-			if flag:
-				_model[task] = selected_model[task][0]
-				if selected_model[task][0] not in _model.values():
-					_C+=selected_model[task][2]
-				
-				return flag,_A,_C,_model
-			else:
-				# flag = True
+					accu = selected_model[objects[0]][1] + selected_model[objects[1]][1] - selected_model[objects[0]][1]*selected_model[objects[1]][1]
+				selected_model[name] = [name,accu,0]
+			if accu<bound:
+				min_accu = selected_model[task][1]
 				continue
+			else:
+				# print(accu, Cost[m_ind,t_ind],{task:selected_model[task][0]})
+				return True, accu, selected_model[answered_tasks[ind]][2], {task:selected_model[task][0]}
+		
+		# new_t_ind = [i for i in range(len(T)) if i not in t_ind]
+		_M = [m for i,m in enumerate(M) if i != m_ind]
+		_Accuracy = np.delete(Accuracy, m_ind, 0)
+		_Cost = np.delete(Cost, m_ind, 0)
+		_Accuracy = np.delete(_Accuracy, t_ind, 1)
+		_Cost = np.delete(_Cost, t_ind, 1)
+		# _Accuracy = _Accuracy[:,new_t_ind]
+		# _Cost = _Cost[:,new_t_ind]
+
+		flag, _A, _C, _model = getBaseline2(query,_M,_T,_Cost,_Accuracy,bound,start,selected_model,level=level+1)
+
+		if flag:
+			_model[task] = selected_model[task][0]
+			if selected_model[task][0] not in _model.values():
+				_C+=selected_model[task][2]
+			
+			return flag,_A,_C,_model
+		else:
+			# flag = True
+			continue
 
 	
 	return False,0,0,{}
