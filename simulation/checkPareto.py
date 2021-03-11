@@ -1,6 +1,6 @@
 import pandas as pd
 
-def checkPareto(df,M,N):
+def checkPareto(df,mflag):
 
 	map_dict = {}
 	columns = list(df.columns)[:-1]
@@ -17,7 +17,7 @@ def checkPareto(df,M,N):
 	# print(rest)
 	df_rest = pd.DataFrame(columns=columns,index=rest)
 	df_pareto = df_pareto.append(df_rest)
-	df_pareto.to_csv('repository/model_pareto_'+str(M)+'_'+str(N)+'.csv')
+	df_pareto.to_csv('repository/model_pareto_'+mflag+'.csv')
 	# df_pareto.fillna(0)
 	return df_pareto
 

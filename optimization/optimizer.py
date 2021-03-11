@@ -5,11 +5,11 @@ from gurobipy import GRB
 import numpy as np
 
 class Optimizer(object):
-	def __init__(self,query,M,T,Accuracy,cost,CostBound):
+	def __init__(self,query,M,T,Accuracy,cost,constraint,bound):
 		nModels = len(M)
-		nTodels = len(T)
+		nTasks= len(T)
 
-		Cost = [[cost[i] if Accuracy[i,j] !=0 else 500 for j in range(nTodels)] for i in range(nModels)]
+		Cost = [[cost[i] if Accuracy[i,j] !=0 else 500 for j in range(nTasks)] for i in range(nModels)]
 
 		performance_dict = {}
 		cost_model_dict = {}
@@ -40,7 +40,8 @@ class Optimizer(object):
 		self.CostMax = 500
 		self.query = query
 		self.Cost = Cost
-		self.CostBound = CostBound
+		self.constraint = constraint
+		self.bound = bound
 		self.cost_model_dict = cost_model_dict
 		self.M = M
 		self.T = T
@@ -49,7 +50,7 @@ class Optimizer(object):
 		self.tupleAccu = tupleAccu
 		self.model = model		
 
-	def printResult(self,v,ms):
+	def printResult(self,v,ms,v1):
 		if self.model.status == GRB.OPTIMAL:
 			model_task_list = {}
 			# print('Optimal objective: %g' % self.model.objVal)
@@ -61,27 +62,36 @@ class Optimizer(object):
 					model_task_list[t]=m
 			# print(model_task_list)
 			# print("----------------")
-			# total_matching_score = 0
-			# for m in self.M:
-			# 	if ms[m].x > 1e-6:
-			# 		print(ms[m].varName, ms[m].x)
-			# 		total_matching_score += self.cost_model_dict[m]*ms[m].x
+			
+			if self.constraint == 'cost':
+				total_matching_score = 0
+				for m in self.M:
+					if ms[m].x > 1e-6:
+						total_matching_score += self.cost_model_dict[m]*ms[m].x
+				# print('cost:',total_matching_score)
+				# if model_task_list == {}:
+					# print('list: ',model_task_list)
+				return model_task_list, self.model.objVal, total_matching_score
+			else:
+				# print(v1.varName,v1.getAttr(GRB.Attr.X))
+				return model_task_list, v1.getAttr(GRB.Attr.X), self.model.objVal
+
 
 			# print('Total matching score: ', total_matching_score)  
 
 			# print("#################")
 			# print("#################")
-			return model_task_list
+			
 
 		elif self.model.status == GRB.INF_OR_UNBD:
 			print('Model is infeasible or unbounded')
-			return {}
+			return {},0,0
 		elif self.model.status == GRB.UNBOUNDED:
 			print('Model is unbounded')
-			return {}
+			return {},0,0
 		else:
 			print('Optimization ended with status %d' % self.model.status)
-			return {}
+			return {},0,0
 
 
 	def getSteps(self,step):
@@ -126,11 +136,11 @@ class Optimizer(object):
 				stepMap[name] = v1
 			else:
 				expr = stepMap[objects[0]] + stepMap[objects[1]] - stepMap[objects[0]]*stepMap[objects[1]]
-				v2 = self.model.addVar(0,1,1,vtype=GRB.CONTINUOUS, name=name)
-				self.model.addConstr(v2==expr, name='constraint.'+name)
-				stepMap[name] = v2
+				v1 = self.model.addVar(0,1,1,vtype=GRB.CONTINUOUS, name=name)
+				self.model.addConstr(v1==expr, name='constraint.'+name)
+				stepMap[name] = v1
 
-		return name, stepMap
+		return v1
 
 	def gurobiOptimizer(self):
 
@@ -149,23 +159,26 @@ class Optimizer(object):
 		e = 0.1 #1.0e-5
 		self.model.addConstrs((v.sum(m,'*') <= 1-e+(u-1+e)*ms[m] for m in self.M), name='upper')
 		self.model.addConstrs((v.sum(m,'*') >= (1-l-e)*ms[m]+l for m in self.M),name='lower')
-
-		self.model.addConstr((ms.prod(self.cost_model_dict) <= self.CostBound), name='cost')
 		self.model.addConstr((v.prod(self.tupleCost))<= self.CostMax, name='bound')
 		
 		# Compute Accuracy in each step
-		name, stepMap = self.recordIntermediateResult(v)
+		v1 = self.recordIntermediateResult(v)
 
 		# Objective
-		self.model.setObjective(stepMap[name],GRB.MAXIMIZE)
+		if self.constraint == 'cost':
+			self.model.addConstr((ms.prod(self.cost_model_dict) <= self.bound), name=self.constraint)
+			self.model.setObjective(v1,GRB.MAXIMIZE)
+		else:
+			self.model.addConstr((v1 >= self.bound), name=self.constraint)
+			self.model.setObjective((ms.prod(self.cost_model_dict)),GRB.MINIMIZE)
 
 		# Run optimization engine
 		self.model.params.NonConvex = 2
 		self.model.optimize()
 
-		assignment = self.printResult(v,ms)
+		assignment,_A,_C = self.printResult(v,ms,v1)
 
-		return assignment
+		return assignment,_A,_C
 
 	def optimize(self):
 		return self.gurobiOptimizer()

@@ -3,10 +3,11 @@ import pandas as pd
 import random
 
 
-def generateRandomRepository(M,N,size,method='median'):
+def generateRandomRepository(mdist):
 	# Selectivity
+	M = 10
+	N = 10
 	s = np.random.uniform(0.3,0.9,N)
-
 	# Mapping
 	task_model_dict = {}
 	model_split = split(M,size)

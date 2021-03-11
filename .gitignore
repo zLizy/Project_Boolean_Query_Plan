@@ -1,3 +1,9 @@
 *.csv
 
 query2optimization/
+
+repository/plots
+
+repository/previous
+
+repository/*csv

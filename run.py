@@ -6,13 +6,13 @@ import pandas as pd
 from sympy.parsing.sympy_parser import parse_expr
 import argparse
 import matplotlib.pyplot as plt
+from baselines.baseline_c_cost import getBaseline1
+from baselines.baseline_c_accuracy_test import getBaseline2
 
 
 
 def run(args):
 
-	
-	time = 0
 	countModel = 0
 	countPareto = 0
 	# assignmentList = []
@@ -20,81 +20,106 @@ def run(args):
 	tempQuery = []
 
 	# get model repository
-	df = getRandomRepository(args.m,args.n,args.flag)
-	# get Pareto summary
-	df_pareto = getParetoSummary(df,args.m,args.n,args.flag)
+	df = getRandomRepository(args.mdist)
+	tasks = ['T'+str(idx) for idx in range(len(df.columns)-1)]
 
-	tasks = df.columns.tolist()
-	models = df.index.tolist()
+	# write columns to file
+	filepath = 'repository/columns.csv'
+	if not os.path.isfile(filepath):
+		df_column = pd.DataFrame()
+		df_column['column']=df.columns
+		df_column['new_name'] = tasks+['cost']
+		df_column.to_csv(filepath)
+	
+	df.columns = tasks+['cost']
+	print('len of df is: '+str(len(df.columns)))
+
+	models = ['M'+str(idx) for idx in range(len(df.index))]
+	# write index to file
+	filepath = 'repository/index.csv'
+	if not os.path.isfile(filepath):
+		df_index = pd.DataFrame()
+		df_index['model']=df.index.tolist()
+		df_index['new_name'] = models
+		df_index.to_csv(filepath)
+	df.index = models
+
+	# get Pareto summary
+	df_pareto = getParetoSummary(df,args.mdist)
+	
 
 	# synthesize queries
-	queryList = getQueries(args.nquery,args.n)
+	queryList = getQueries(len(tasks),args.qdist)
+	idx = 1
+	time = 0
+	data_process_time = 0
 
 	for query in queryList:
-		# print(query)
-		flag = False
+
+		if idx % 1 == 0:
+			print('query '+ str(idx))
+		idx+=1
 
 		T,steps = getSteps(str(query))
-		# print(T)
 
-		for t in T:
-			if not t in tasks:
-				print('Process fails due to lack of model solving task ' + t)
-				flag = True
-				break
-		if flag: continue
-		column=T #+['cost']
-		# print(df.head())
-
-		df_selected = df.loc[:,column]
-		# print(df_selected.head())
-		df_selected.dropna(how='all',inplace=True)
-		df_selected = df_selected.fillna(0)
-		# print(df_selected.head())
-		row_selected = df_selected.index
-
-
-		M = df_selected.index.tolist()
-		
-		cost = df.loc[row_selected,'cost']
-		Accuracy = df_selected[T].to_numpy()
-		# compute runtime
+		# data process
 		start = timeit.default_timer()
-		optimizer = Optimizer(steps,M,T,Accuracy,cost,args.bound)
-		# task:model
-		assignment = optimizer.optimize()
+		df_selected = df[T]
+		df_selected = df_selected.dropna(how='all').fillna(0)
+		row_selected = df_selected.index
+		M = df_selected.index.tolist()
+		cost = df.loc[row_selected,'cost']
+		Accuracy = df_selected.to_numpy()
 		end = timeit.default_timer()
-		time += end-start
+		data_process_time = end-start
 
-		if assignment != {}:
-			countModel += len(assignment)
-			count, temp = paretoSummary(df_pareto, assignment)
-			countPareto += count
-			if temp != '':
-				tempList.append(temp)
-				tempQuery.append(str(query))
-		
+
+		# compute runtime
+		# ## optimizer
+		if args.approach == 'optimizer':
+			start = timeit.default_timer()
+			optimizer = Optimizer(steps,M,T,Accuracy,cost,args.constraint,args.bound)
+			# task:model
+			assignment,_A,_C = optimizer.optimize()
+			end = timeit.default_timer()
+			time = end-start
+			writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time)
+		else:
+			Cost = np.array([[cost[i] if Accuracy[i,j] !=0 else 500 for j in range(len(T))] for i in range(len(M))])
+			if args.constraint == 'cost':
+				## baseline1
+				start = timeit.default_timer()
+				# task:model
+				flag,_A,_C,assignment = getBaseline1(steps,M,T,Cost,Accuracy,args.bound,selected_model={})
+				end = timeit.default_timer()
+				time = end-start
+				writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time,approach='baseline')
+			else:
+				## baseline2
+				start = timeit.default_timer()
+				flag,_A,_C,assignment = getBaseline2(steps,M,T,Cost,Accuracy,args.bound,selected_model={})
+				end = timeit.default_timer()
+				time = end-start
+				print(flag,_A,_C)
+				writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time,approach='baseline')
+			
 		# assignmentList.append(assignment)
+
 	
-	
-	writeSummary(args,countModel,countPareto)
-	writeQuery(tempList,tempQuery,args.flag)
+	# writeSummary(args,countModel,countPareto)
+	# writeQuery(tempList,tempQuery,args.mdist,args.qdist)
 	return time
 
 
-
-	
-	
-
 if __name__ == '__main__':
 	
-	# python run.py -m 100 -n 40 -flag 0 -nquery 100 -constraint cost -bound 200
-	# python run.py -m 100 -n 40 -nquery 50 -constraint cost -bound 200
-	# python run.py -m 200 -n 40 -nquery 50 -constraint cost -bound 200
-	# python run.py -m 200 -n 40 -nquery 100 -constraint cost -bound 200
-	# python run.py -m 200 -n 40 -nquery 150 -constraint cost -bound 200
-	# python run.py -m 200 -n 40 -nquery 200 -constraint cost -bound 200
-	# python run.py -m 200 -n 80 -nquery 50 -constraint cost -bound 200
+	# python run.py -mdist uniform -qdist uniform -constraint cost -bound 200 -approach baseline
+	# python run.py -mdist uniform -qdist power_law -constraint cost -bound 200 -approach baseline
+	# python run.py -mdist power_law -qdist uniform -constraint cost -bound 200
+	# python run.py -mdist power_law -qdist power_law -constraint cost -bound 200
+	# python run.py -mdist uniform -qdist uniform -constraint accuracy -bound 0.95
+	# python run.py -mdist uniform -qdist power_law -constraint accuracy -bound 0.95
+	
 	# python run.py -m 200 -n 20 -nquery 200 -constraint cost -bound 200
 	'''
 	Configurations
@@ -103,18 +128,21 @@ if __name__ == '__main__':
 	parser.add_argument('-m', help='Number of models, enter it',default=100, type=int)
 	parser.add_argument('-n', help='Number of tasks, enter it', default=40, type=int)
 	parser.add_argument('-nquery', help='Number of queries, enter it', default=100, type=int)
+	parser.add_argument('-qdist', help='query distribution', default='uniform', type=str)
+	parser.add_argument('-mdist', help='model repository distribution', default='uniform', type=str)
 	parser.add_argument('-flag', help='high accuracy model is costly', default=1, type=int)
 	parser.add_argument('-constraint', help='Type of constraint, enter accuracy/cost', default='cost', type=str)
+	parser.add_argument('-approach', help='Type of approach, enter optimizer/baseline', default='optimizer', type=str)
 	parser.add_argument('-bound', help='constraint bound, enter it',default=40, type=float)
 	args = parser.parse_args()
 
 	
 	time = run(args)
-	filepath = 'simulation/run_summary.csv'
-	if os.path.isfile(filepath):
-		df = pd.read_csv(filepath,index_col=0)
-	else: df = pd.DataFrame(columns=['M','N','#query','time'])
-	df = df.append({'M':args.m,'N':args.n,'#query':args.nquery,'time':time},ignore_index=True)
-	df = df.sort_values(by=['M','N','#query'])
-	df.index = range(len(df))
-	df.to_csv('simulation/run_summary.csv')
+	# filepath = 'repository/run_summary.csv'
+	# if os.path.isfile(filepath):
+	# 	df = pd.read_csv(filepath,index_col=0)
+	# else: df = pd.DataFrame(columns=['mdist','qdist','constraint','bound','time'])
+	# df = df.append({'mdist':args.mdist,'qdist':args.qdist,'constraint':args.constraint,'bound':args.bound,'time':time},ignore_index=True)
+	# df = df.sort_values(by=['mdist','qdist','constraint'])
+	# df.index = range(len(df))
+	# df.to_csv('repository/run_summary.csv')
