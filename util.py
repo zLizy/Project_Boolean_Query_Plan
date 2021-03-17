@@ -9,6 +9,9 @@ from simulation.checkPareto import checkPareto
 from optimization.optimizer import *
 
 
+def is_blank(x):
+	return not pd.isnull(x)
+
 def getDF(path):
 	df = pd.read_csv(path,index_col=0)
 	return df
@@ -16,7 +19,6 @@ def getDF(path):
 def getParetoSummary(df,mflag):
 	# method = mapFlag(flag)
 
-	# path = 'repository/model_pareto_'+str(M)+'_'+str(N)+'_'+method+'.csv'
 	path = 'repository/model_pareto_'+mflag+'.csv'
 	if os.path.isfile(path):
 		df_pareto = getDF(path)
@@ -32,9 +34,16 @@ def getRandomRepository(mdist):
 	The result is stored in model_repository.csv
 	--mflag: uniform / power_law
 	'''
+		# write index to file
+	# filepath = 'repository/index.csv'
+	# if not os.path.isfile(filepath):
+	# 	df_index = pd.DataFrame()
+	# 	df_index['model']=df.index.tolist()
+	# 	df_index['new_name'] = models
+	# 	df_index.to_csv(filepath)
 
 	model_task_dict = {}
-	# filepath = 'repository/model_repository_'+str(M)+'_'+str(N)+'_'+method+'.csv'
+
 	filepath = 'repository/model_repository_'+mdist+'.csv'
 	if os.path.isfile(filepath):
 		print ("Model repository exist")
@@ -45,6 +54,20 @@ def getRandomRepository(mdist):
 		df = generateRandomRepository(mdist)
 	
 	return df
+
+def getParetoModelOnly(df,df_pareto,mdist):
+	path = 'repository/pareto_only_model_'+mdist+'.csv'
+	if os.path.isfile(path):
+		df_new = getDF(path)
+		return df_new
+	else:
+		indexer = df_pareto.applymap(is_blank)
+		df_new = pd.DataFrame(columns=df.columns,index=df.index)
+		df_new[indexer] = df
+		df_new['cost'] = df['cost']
+		print('cost' in df_new.columns)
+		df_new.to_csv(path)
+		return df_new
 
 
 def getQueries(N,qdist='uniform'):
@@ -161,7 +184,7 @@ def getSteps(query):
 def writeResults(args,query,T,all_model,pareto,non_pareto,count_p,count_np,_A,_C,time,data_process_time,approach):
 	
 	filepath = 'repository/run_summary_'+args.constraint+'_'+args.mdist+'_'+args.qdist+'_'+approach+'.csv'
-	# filepath = 'repository/test_.csv'
+	# filepath = 'repository/test.csv'
 	if os.path.isfile(filepath):
 		df_summary = pd.read_csv(filepath,index_col=0)
 	else: 

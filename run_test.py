@@ -67,7 +67,7 @@ def run(args):
 			if args.approach == 'optimizer':
 				start = timeit.default_timer()
 				optimizer = Optimizer(steps,M,T,Accuracy,cost,args.constraint,args.bound)
-				# assignment = {task:model}
+				# task:model
 				assignment,_A,_C = optimizer.optimize()
 				end = timeit.default_timer()
 				time = end-start
@@ -81,19 +81,38 @@ def run(args):
 					flag,_A,_C,assignment = getBaseline1(steps,M,T,Cost,Accuracy,args.bound,selected_model={})
 					end = timeit.default_timer()
 					time = end-start
-					writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time,approach='baseline_pareto')
+					writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time,approach='baseline')
 				else:
 					## baseline2
 					start = timeit.default_timer()
 					from baselines.baseline_c_accuracy import getBaseline2
 					flag,_A,_C,assignment = getBaseline2(steps,M,T,Cost,Accuracy,args.bound,start,selected_model={})
 					
+					# if _A ==0 and not flag:
+					# 	print('next')
+					# 	start_ = timeit.default_timer()
+					# 	from baselines.baseline_c_accuracy_reverse import getBaseline2
+					# 	flag,_A,_C,assignment = getBaseline2(steps,M,T,Cost,Accuracy,args.bound,start_,selected_model={})
+					# 	if _A ==0 and not flag:
+					# 		print('next')
+					# 		start_ = timeit.default_timer()
+					# 		from baselines.baseline_c_accuracy import getBaseline2
+					# 		flag,_A,_C,assignment = getBaseline2(steps,M,T,Cost,Accuracy,args.bound,start_,selected_model={})
+					# 		if _A ==0 and not flag:
+					# 			print('next')
+					# 			from baselines.baseline_c_accuracy_reverse import getBaseline2
+					# 			flag,_A,_C,assignment = getBaseline2(steps,M,T,Cost,Accuracy,args.bound,start_,selected_model={},second=True)
+					
 					end = timeit.default_timer()
 					time = end-start
 					print(flag,_A,_C)
-					writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time,approach='baseline_pareto')
+					writeIntermediateParetoSummary(args,df_pareto,query,T,assignment,_A,_C,time,data_process_time,approach='baseline')
 		idx+=1	
+		# assignmentList.append(assignment)
 
+	
+	# writeSummary(args,countModel,countPareto)
+	# writeQuery(tempList,tempQuery,args.mdist,args.qdist)
 	return time
 
 
@@ -101,14 +120,15 @@ if __name__ == '__main__':
 	
 	# python run.py -mdist uniform -qdist uniform -constraint cost -bound 200 -approach baseline
 	# python run.py -mdist uniform -qdist power_law -constraint cost -bound 200 -approach baseline
-	# python run.py -mdist power_law -qdist uniform -constraint cost -bound 200 -approach baseline
-	# python run.py -mdist power_law -qdist power_law -constraint cost -bound 200 -approach baseline
+	# python run.py -mdist power_law -qdist uniform -constraint cost -bound 200
+	# python run.py -mdist power_law -qdist power_law -constraint cost -bound 200
 
 	# python run.py -mdist uniform -qdist uniform -constraint accuracy -bound 0.95 -approach baseline
 	# python run.py -mdist uniform -qdist power_law -constraint accuracy -bound 0.95 -approach baseline
 	# python run.py -mdist power_law -qdist uniform -constraint accuracy -bound 0.95 -approach baseline
 	# python run.py -mdist power_law -qdist power_law -constraint accuracy -bound 0.95 -approach baseline
-
+	
+	# python run.py -m 200 -n 20 -nquery 200 -constraint cost -bound 200
 	'''
 	Configurations
 	'''
@@ -126,3 +146,11 @@ if __name__ == '__main__':
 
 	
 	time = run(args)
+	# filepath = 'repository/run_summary.csv'
+	# if os.path.isfile(filepath):
+	# 	df = pd.read_csv(filepath,index_col=0)
+	# else: df = pd.DataFrame(columns=['mdist','qdist','constraint','bound','time'])
+	# df = df.append({'mdist':args.mdist,'qdist':args.qdist,'constraint':args.constraint,'bound':args.bound,'time':time},ignore_index=True)
+	# df = df.sort_values(by=['mdist','qdist','constraint'])
+	# df.index = range(len(df))
+	# df.to_csv('repository/run_summary.csv')

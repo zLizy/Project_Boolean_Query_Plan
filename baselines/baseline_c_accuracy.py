@@ -28,8 +28,8 @@ def getSteps(step):
 
 def getBaseline2(query,M,T,Cost,Accuracy,bound,start,selected_model={},flag=True,level=0):
 
-	if timeit.default_timer() - start > 15:
-		return False,0,0,{}
+	# if timeit.default_timer() - start > 15:
+	# 	return False,0,0,{}
 
 	t_ind = 0
 	task = T[0]
