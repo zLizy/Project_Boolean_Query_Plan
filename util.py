@@ -1,7 +1,7 @@
 import os.path
 import random
 import pandas as pd
-from simulation.synthesize_random import generateRandomRepository
+from simulation.synthesize_sampling import generateRandomRepository
 from sympy.parsing.sympy_parser import parse_expr
 from optimization.parser import *
 from simulation.querygenerator import Expression
@@ -16,19 +16,22 @@ def getDF(path):
 	df = pd.read_csv(path,index_col=0)
 	return df
 
-def getParetoSummary(df,mflag):
+def getParetoSummary(df,mdist,a):
 	# method = mapFlag(flag)
 
-	path = 'repository/model_pareto_'+mflag+'.csv'
+	if mdist == 'power_law':
+		path = 'repository/model_pareto_'+mdist+'_a='+str(a)+'.csv'
+	else:
+		path = 'repository/model_pareto_'+mdist+'.csv'
 	if os.path.isfile(path):
 		df_pareto = getDF(path)
 	else:
-		df_pareto = checkPareto(df,mflag)
+		df_pareto = checkPareto(df,mdist)
 		df_pareto.to_csv(path)
 	return df_pareto
 
 
-def getRandomRepository(mdist):
+def getRandomRepository(mdist,a):
 	'''
 	Get synthesized model repository.
 	The result is stored in model_repository.csv
@@ -43,20 +46,25 @@ def getRandomRepository(mdist):
 	# 	df_index.to_csv(filepath)
 
 	model_task_dict = {}
-
-	filepath = 'repository/model_repository_'+mdist+'.csv'
+	if mdist == 'power_law':
+		filepath = 'repository/model_repository_'+mdist+'_a='+str(a)+'.csv'
+	else:
+		filepath = 'repository/model_repository_'+mdist+'.csv'
 	if os.path.isfile(filepath):
 		print ("Model repository exist")
 		df = getDF(filepath)
 	else:
 		print ("File not exist")
 		print('synthesizing model repository')
-		df = generateRandomRepository(mdist)
+		df = generateRandomRepository(mdist,a)
 	
 	return df
 
-def getParetoModelOnly(df,df_pareto,mdist):
-	path = 'repository/pareto_only_model_'+mdist+'.csv'
+def getParetoModelOnly(df,df_pareto,mdist,a):
+	if mdist == 'power_law':
+		path = 'repository/pareto_only_model_'+mdist+'_a='+str(a)+'.csv'
+	else:
+		path = 'repository/pareto_only_model_'+mdist+'.csv'
 	if os.path.isfile(path):
 		df_new = getDF(path)
 		return df_new
@@ -183,7 +191,11 @@ def getSteps(query):
 
 def writeResults(args,query,T,all_model,pareto,non_pareto,count_p,count_np,_A,_C,time,data_process_time,approach):
 	
-	filepath = 'repository/run_summary_'+args.constraint+'_'+args.mdist+'_'+args.qdist+'_'+approach+'.csv'
+	if args.mdist == 'power_law':
+		filepath = 'repository/run_summary_'+args.constraint+'_'+args.mdist+'_'+ \
+			args.qdist+'_'+approach+'_a='+str(args.a)+'.csv'
+	else:
+		filepath = 'repository/run_summary_'+args.constraint+'_'+args.mdist+'_'+args.qdist+'_'+approach+'.csv'
 	# filepath = 'repository/test.csv'
 	if os.path.isfile(filepath):
 		df_summary = pd.read_csv(filepath,index_col=0)

@@ -19,7 +19,7 @@ def run(args):
 	tempQuery = []
 
 	# get model repository
-	df = getRandomRepository(args.mdist)
+	df = getRandomRepository(args.mdist,args.a)
 	tasks = ['T'+str(idx) for idx in range(len(df.columns)-1)]
 	df.columns = tasks+['cost']
 	print('len of df is: '+str(len(df.columns)))
@@ -28,7 +28,7 @@ def run(args):
 	df.index = models
 
 	# get Pareto summary
-	df_pareto = getParetoSummary(df,args.mdist)
+	df_pareto = getParetoSummary(df,args.mdist,args.a)
 	
 	# synthesize queries
 	queryList = getQueries(len(tasks),args.qdist)
@@ -38,7 +38,7 @@ def run(args):
 
 	# get Pareto model only
 	if args.approach == 'baseline':
-		df = getParetoModelOnly(df,df_pareto,args.mdist)
+		df = getParetoModelOnly(df,df_pareto,args.mdist,args.a)
 
 
 	for query in queryList:
@@ -101,8 +101,8 @@ if __name__ == '__main__':
 	
 	# python run.py -mdist uniform -qdist uniform -constraint cost -bound 200 -approach baseline
 	# python run.py -mdist uniform -qdist power_law -constraint cost -bound 200 -approach baseline
-	# python run.py -mdist power_law -qdist uniform -constraint cost -bound 200 -approach baseline
-	# python run.py -mdist power_law -qdist power_law -constraint cost -bound 200 -approach baseline
+	# python run.py -mdist power_law -a 4 -qdist uniform -constraint cost -bound 200 -approach baseline
+	# python run.py -mdist power_law -a 4 -qdist power_law -constraint cost -bound 200 -approach baseline
 
 	# python run.py -mdist uniform -qdist uniform -constraint accuracy -bound 0.95 -approach baseline
 	# python run.py -mdist uniform -qdist power_law -constraint accuracy -bound 0.95 -approach baseline
@@ -113,7 +113,7 @@ if __name__ == '__main__':
 	Configurations
 	'''
 	parser = argparse.ArgumentParser(description = 'Description')
-	parser.add_argument('-m', help='Number of models, enter it',default=100, type=int)
+	parser.add_argument('-a', help='factor for power law distribution',default=5, type=int)
 	parser.add_argument('-n', help='Number of tasks, enter it', default=40, type=int)
 	parser.add_argument('-nquery', help='Number of queries, enter it', default=100, type=int)
 	parser.add_argument('-qdist', help='query distribution', default='uniform', type=str)
