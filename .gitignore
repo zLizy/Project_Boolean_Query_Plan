@@ -28,4 +28,4 @@ yolov3/
 
 !repository/model_stats_f1.csv
 !results/results*.csv
-!output/coco
+!output/coco/*.csv
