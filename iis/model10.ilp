@@ -1,0 +1,37 @@
+\ Model RAPs_complex_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+Maximize
+ 
+Subject To
+ Order_once[0]: order[fork,0] + order[apple,0] + order[frisbee,0]
+   + order[bottle,0] + order[book,0] + order[umbrella,0] + order[boat,0]
+   + order[truck,0] = 1
+ g_1_smaller[0,<gurobi.Var_g[G0,1]>,truck]: - order[truck,0] + g[G0,1]
+   <= 0
+ g_1_smaller[0,<gurobi.Var_g[G0,1]>,book]: - order[book,0] + g[G0,1] <= 0
+ g_1_smaller[1,<gurobi.Var_g[G1,1]>,boat]: - order[boat,0] + g[G1,1] <= 0
+ g_1_smaller[1,<gurobi.Var_g[G1,1]>,frisbee]: - order[frisbee,0] + g[G1,1]
+   <= 0
+ w_g1[0,G0]: 0.4096 g[G0,1] + w[G0,1] = 1
+ w_g1[1,G1]: 0.64 g[G1,1] + w[G1,1] = 1
+ w_g1[2,G2]: 0.8 g[G2,1] + w[G2,1] = 1
+ rG0[1]: - w[G0,1] + r[G0,1] = 0
+ rG1[1]: r[G1,1] + [ - w[G1,1] * r[G0,1] ] = 0
+ rG2[1]: r[G2,1] + [ - w[G2,1] * r[G1,1] ] = 0
+ new_o_0[boat]: new_o[0,boat] + [ - order[boat,0] * r[H3,0] ] = 0
+ new_o_0[truck]: new_o[0,truck] + [ - order[truck,0] * r[H3,0] ] = 0
+Bounds
+ w[G0,1] free
+ w[G1,1] free
+ w[G2,1] free
+ r[G0,1] free
+ r[G1,1] free
+ r[G2,1] free
+ r[H3,0] free
+ new_o[0,boat] free
+ new_o[0,truck] free
+Binaries
+ order[fork,0] order[apple,0] order[frisbee,0] order[bottle,0]
+ order[book,0] order[umbrella,0] order[boat,0] order[truck,0] g[G0,1]
+ g[G1,1] g[G2,1]
+End

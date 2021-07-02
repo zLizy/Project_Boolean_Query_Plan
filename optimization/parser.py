@@ -26,7 +26,7 @@ def makeLRlike(numterms):
 
 def parse(query):
     # setup a simple grammar for 4-function arithmetic
-    varname = Word(alphanums)
+    varname = Word(alphanums+'_') # CharsNotIn(', ')#
     # integer = Word(nums)
     operand = varname
     # operand = integer | varname
@@ -46,6 +46,21 @@ def parse(query):
     return arith2.parseString(query)[0].asList()
 
 
+def parse2(query):
+    varname = Word(alphanums+'_') # CharsNotIn(', ')#
+    # integer = Word(nums)
+    operand = varname
+
+    expr = infixNotation(
+    operand,
+        [
+            (None, 2, opAssoc.LEFT, makeLRlike(None)),
+            ("~", 1, opAssoc.RIGHT, makeLRlike(0)),
+            ("&", 2, opAssoc.LEFT, makeLRlike(2)),
+            ("|", 2, opAssoc.LEFT, makeLRlike(2)),
+        ]
+    )
+    return expr.parseString(query)[0].asList()
 
 
 def getSequence(query,i,exp):
@@ -75,10 +90,17 @@ def getSequence(query,i,exp):
 if __name__ == '__main__':
 
 
-    query = "car & red | bus & yellow"
+    # query = "car & red | bus & yellow"
+    query = "car & red | bus & (yellow | green)"
+    # query = '((a|b))'
+    print(query)
     result = parse(query)
-    # print(parser.parse("A+B+C*D+E"))
     print(result)
+
+    # result2 = parse2(query)
+    # print('result2',result2)
+    # print(getSequence(result2,0,''))
+
     exp,i = getSequence(result,0,'')
     print(exp)
 

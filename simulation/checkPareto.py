@@ -1,9 +1,9 @@
 import pandas as pd
 
-def checkPareto(df,mflag):
+def checkPareto(df,path):
 
 	map_dict = {}
-	columns = list(df.columns)[:-1]
+	columns = [c for c in df.columns if c!='cost']
 	for c in columns:
 		data = df.loc[:,[c,'cost']]
 		data = data.dropna()
@@ -21,7 +21,7 @@ def checkPareto(df,mflag):
 	df_rest = pd.DataFrame(columns=columns,index=rest)
 	df_pareto_b = df_pareto_b.append(df_rest)
 
-	df_pareto_b.to_csv('repository/model_pareto_'+mflag+'.csv')
+	df_pareto_b.to_csv(path)
 	# df_pareto.fillna(0)
 	return df_pareto_b
 

@@ -9,7 +9,7 @@ class Optimizer(object):
 		nModels = len(M)
 		nTasks= len(T)
 
-		Cost = [[cost[i] if Accuracy[i,j] !=0 else 500 for j in range(nTasks)] for i in range(nModels)]
+		Cost = [[cost[i] if Accuracy[i,j] !=0 else 5000 for j in range(nTasks)] for i in range(nModels)]
 
 		performance_dict = {}
 		cost_model_dict = {}
@@ -37,7 +37,7 @@ class Optimizer(object):
 		model=gp.Model('RAPs_complex')
 		model.Params.LogToConsole = 0
 
-		self.CostMax = 500
+		self.CostMax = 5000
 		self.query = query
 		self.Cost = Cost
 		self.constraint = constraint
@@ -53,7 +53,7 @@ class Optimizer(object):
 	def printResult(self,v,ms,v1):
 		if self.model.status == GRB.OPTIMAL:
 			model_task_list = {}
-			# print('Optimal objective: %g' % self.model.objVal)
+			print('Optimal objective: %g' % self.model.objVal)
 			 # Compute total matching score from assignment variables
 			# print("Selected models:")
 			for m, t in self.Tuples:
@@ -71,10 +71,10 @@ class Optimizer(object):
 				# print('cost:',total_matching_score)
 				# if model_task_list == {}:
 					# print('list: ',model_task_list)
-				return model_task_list, self.model.objVal, total_matching_score
+				return model_task_list, list(model_task_list.keys()),self.model.objVal, total_matching_score
 			else:
 				# print(v1.varName,v1.getAttr(GRB.Attr.X))
-				return model_task_list, v1.getAttr(GRB.Attr.X), self.model.objVal
+				return model_task_list, list(model_task_list.keys()),v1.getAttr(GRB.Attr.X), self.model.objVal
 
 
 			# print('Total matching score: ', total_matching_score)  
@@ -85,13 +85,13 @@ class Optimizer(object):
 
 		elif self.model.status == GRB.INF_OR_UNBD:
 			print('Model is infeasible or unbounded')
-			return {},0,0
+			return {},[],0,0
 		elif self.model.status == GRB.UNBOUNDED:
 			print('Model is unbounded')
-			return {},0,0
+			return {},[],0,0
 		else:
 			print('Optimization ended with status %d' % self.model.status)
-			return {},0,0
+			return {},[],0,0
 
 
 	def getSteps(self,step):
@@ -176,9 +176,9 @@ class Optimizer(object):
 		self.model.params.NonConvex = 2
 		self.model.optimize()
 
-		assignment,_A,_C = self.printResult(v,ms,v1)
+		assignment,order,_A,_C = self.printResult(v,ms,v1)
 
-		return assignment,_A,_C
+		return assignment,order,_A,_C
 
 	def optimize(self):
 		return self.gurobiOptimizer()

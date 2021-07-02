@@ -1,0 +1,69 @@
+\ Model RAPs_complex_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+Minimize
+ 
+Subject To
+ Task[P97]: assign[M9,P97] + assign[M10,P97] + assign[M11,P97]
+   + assign[M12,P97] + assign[M13,P97] + assign[M14,P97] + assign[M15,P97]
+   + assign[M16,P97] + assign[M17,P97] + assign[M18,P97] + assign[M592,P97]
+   + assign[M604,P97] + assign[M614,P97] + assign[M617,P97]
+   + assign[M623,P97] + assign[M635,P97] + assign[M636,P97]
+   + assign[M650,P97] + assign[M677,P97] + assign[M720,P97]
+   + assign[M746,P97] + assign[M751,P97] + assign[M783,P97]
+   + assign[M792,P97] + assign[M806,P97] + assign[M854,P97]
+   + assign[M870,P97] + assign[M874,P97] + assign[M891,P97]
+   + assign[M922,P97] + assign[M928,P97] + assign[M940,P97]
+   + assign[M954,P97] + assign[M957,P97] + assign[M970,P97]
+   + assign[M1034,P97] + assign[M1050,P97] + assign[M1059,P97]
+   + assign[M1092,P97] + assign[M1116,P97] + assign[M1129,P97]
+   + assign[M1130,P97] + assign[M1131,P97] + assign[M1141,P97]
+   + assign[M1143,P97] + assign[M1164,P97] + assign[M1214,P97] = 1
+ accuracy: s2 >= 0.95
+ constraint.P382: - 0.98 assign[M9,P382] - 0.96 assign[M10,P382]
+   - 0.96 assign[M11,P382] - 0.98 assign[M12,P382] - 0.92 assign[M13,P382]
+   - 0.94 assign[M14,P382] - 0.6 assign[M15,P382] - 0.98 assign[M16,P382]
+   - 0.94 assign[M17,P382] - 0.94 assign[M18,P382]
+   - 0.8242454445491623 assign[M617,P382]
+   - 0.676781613890307 assign[M635,P382]
+   - 0.7498081281147795 assign[M751,P382]
+   - 0.7246594397617452 assign[M806,P382] + P382 + [ ] = 0
+ constraint.P97: - 0.74 assign[M9,P97] - 0.76 assign[M10,P97]
+   - 0.7 assign[M11,P97] - 0.74 assign[M12,P97] - 0.62 assign[M13,P97]
+   - 0.62 assign[M14,P97] - 0.22 assign[M15,P97] - 0.76 assign[M16,P97]
+   - 0.68 assign[M17,P97] - 0.68 assign[M18,P97] + P97 + [ ] = 0
+ constraint.P304: - 0.68 assign[M9,P304] - 0.7 assign[M10,P304]
+   - 0.7 assign[M11,P304] - 0.6 assign[M12,P304] - 0.64 assign[M13,P304]
+   - 0.58 assign[M14,P304] - 0.62 assign[M15,P304] - 0.8 assign[M16,P304]
+   - 0.66 assign[M17,P304] - 0.68 assign[M18,P304]
+   - 0.6728948883436118 assign[M928,P304] + P304 + [ ] = 0
+ constraint.s0: s0 + [ - P382 * P781 ] = 0
+ constraint.s1: s1 + [ - P97 * s0 ] = 0
+ constraint.s2: - P304 - s1 + s2 + [ P304 * s1 ] = 0
+Bounds
+ -infinity <= P382 <= 1
+ -infinity <= P781 <= 1
+ P97 free
+ P304 free
+ s0 free
+ s1 free
+ -infinity <= s2 <= 1
+Binaries
+ assign[M9,P382] assign[M9,P97] assign[M9,P304] assign[M10,P382]
+ assign[M10,P97] assign[M10,P304] assign[M11,P382] assign[M11,P97]
+ assign[M11,P304] assign[M12,P382] assign[M12,P97] assign[M12,P304]
+ assign[M13,P382] assign[M13,P97] assign[M13,P304] assign[M14,P382]
+ assign[M14,P97] assign[M14,P304] assign[M15,P382] assign[M15,P97]
+ assign[M15,P304] assign[M16,P382] assign[M16,P97] assign[M16,P304]
+ assign[M17,P382] assign[M17,P97] assign[M17,P304] assign[M18,P382]
+ assign[M18,P97] assign[M18,P304] assign[M592,P97] assign[M604,P97]
+ assign[M614,P97] assign[M617,P382] assign[M617,P97] assign[M623,P97]
+ assign[M635,P382] assign[M635,P97] assign[M636,P97] assign[M650,P97]
+ assign[M677,P97] assign[M720,P97] assign[M746,P97] assign[M751,P382]
+ assign[M751,P97] assign[M783,P97] assign[M792,P97] assign[M806,P382]
+ assign[M806,P97] assign[M854,P97] assign[M870,P97] assign[M874,P97]
+ assign[M891,P97] assign[M922,P97] assign[M928,P97] assign[M928,P304]
+ assign[M940,P97] assign[M954,P97] assign[M957,P97] assign[M970,P97]
+ assign[M1034,P97] assign[M1050,P97] assign[M1059,P97] assign[M1092,P97]
+ assign[M1116,P97] assign[M1129,P97] assign[M1130,P97] assign[M1131,P97]
+ assign[M1141,P97] assign[M1143,P97] assign[M1164,P97] assign[M1214,P97]
+End
